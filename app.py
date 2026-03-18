@@ -16,17 +16,17 @@ df = pd.read_csv(sheet_url)
 # Clean column names
 df.columns = df.columns.str.strip()
 
-# Select only required columns
+# Select required columns
 df = df[[
     "TEAM NAME",
     "DATE AND TIME OF SIZED",
     "AMOUNT (IN Rupees)"
 ]].copy()
 
-# Rename for simplicity
+# Rename
 df.columns = ["team", "datetime", "amount"]
 
-# Convert datetime → DATE only
+# Convert datetime → date only
 df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
 df["date"] = df["datetime"].dt.date
 
@@ -36,14 +36,14 @@ df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
 # Clean team
 df["team"] = df["team"].astype(str).str.upper()
 
-# Split SST and FST
+# Split teams
 df_sst = df[df["team"] == "SST"]
 df_fst = df[df["team"] == "FST"]
 
-st.title("📊 Seizure Dashboard (SST vs FST)")
+st.title("📊 Seizure Summary (Date-wise)")
 
 # -------- FUNCTION --------
-def process(data, title):
+def show_table(data, title):
     st.subheader(f"🚓 {title}")
 
     if data.empty:
@@ -54,25 +54,22 @@ def process(data, title):
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
-    # Cumulative
+    # Cumulative total
     daily["cumulative"] = daily["amount"].cumsum()
 
-    # KPI
+    # Total
     total = int(daily["amount"].sum())
     st.metric(f"{title} Total (₹)", total)
 
-    # Table
-    st.dataframe(daily)
-
-    # Charts
-    st.line_chart(daily.set_index("date")[["amount", "cumulative"]])
+    # Table display
+    st.dataframe(daily, use_container_width=True)
 
 
 # -------- DISPLAY --------
 col1, col2 = st.columns(2)
 
 with col1:
-    process(df_sst, "SST")
+    show_table(df_sst, "SST")
 
 with col2:
-    process(df_fst, "FST")
+    show_table(df_fst, "FST")
