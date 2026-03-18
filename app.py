@@ -73,3 +73,23 @@ with col1:
 
 with col2:
     show_table(df_fst, "FST")
+# -------- TEAM-WISE + GRAND TOTAL --------
+st.subheader("📌 Summary")
+
+team_total = df.groupby("team")["amount"].sum().reset_index()
+team_total.columns = ["Team", "Total Amount (₹)"]
+
+# Display table
+st.dataframe(team_total, use_container_width=True)
+
+# Extract values
+sst_total = team_total[team_total["Team"] == "SST"]["Total Amount (₹)"].sum()
+fst_total = team_total[team_total["Team"] == "FST"]["Total Amount (₹)"].sum()
+grand_total = int(df["amount"].sum())
+
+# Display metrics
+col1, col2, col3 = st.columns(3)
+
+col1.metric("🚓 SST Total (₹)", int(sst_total))
+col2.metric("🚓 FST Total (₹)", int(fst_total))
+col3.metric("💰 Grand Total (₹)", grand_total)
