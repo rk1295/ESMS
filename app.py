@@ -16,43 +16,50 @@ df = pd.read_csv(sheet_url)
 # Clean column names
 df.columns = df.columns.str.strip()
 
-# Keep only required columns
+# Select only required columns
 df = df[[
+    "TEAM NAME",
     "DATE AND TIME OF SIZED",
-    "AMOUNT (IN Rupees)",
-    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER"
+    "AMOUNT (IN Rupees)"
 ]].copy()
 
 # Rename for simplicity
-df.columns = ["datetime", "amount", "team"]
+df.columns = ["team", "datetime", "amount"]
 
-# Convert data
+# Convert datetime → DATE only
 df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
 df["date"] = df["datetime"].dt.date
+
+# Clean amount
 df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
+
+# Clean team
 df["team"] = df["team"].astype(str).str.upper()
 
-# Split teams
-df_sst = df[df["team"].str.contains("SST", na=False)]
-df_fst = df[df["team"].str.contains("FST", na=False)]
+# Split SST and FST
+df_sst = df[df["team"] == "SST"]
+df_fst = df[df["team"] == "FST"]
 
-st.title("📊 Seizure Summary (SST vs FST)")
+st.title("📊 Seizure Dashboard (SST vs FST)")
 
 # -------- FUNCTION --------
-def show_table(data, title):
+def process(data, title):
     st.subheader(f"🚓 {title}")
 
     if data.empty:
         st.warning(f"No data for {title}")
         return
 
+    # Date-wise total
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
+    # Cumulative
     daily["cumulative"] = daily["amount"].cumsum()
 
     # KPI
-    st.metric(f"{title} Total (₹)", int(daily["amount"].sum()))
+    total = int(daily["amount"].sum())
+    st.metric(f"{title} Total (₹)", total)
 
     # Table
     st.dataframe(daily)
@@ -65,7 +72,7 @@ def show_table(data, title):
 col1, col2 = st.columns(2)
 
 with col1:
-    show_table(df_sst, "SST")
+    process(df_sst, "SST")
 
 with col2:
-    show_table(df_fst, "FST")
+    process(df_fst, "FST")
