@@ -2,11 +2,22 @@ import streamlit as st
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 
-# Page config (mobile friendly)
+# Page config
 st.set_page_config(layout="wide", page_title="Seizure Dashboard")
 
 # Auto refresh
 st_autorefresh(interval=30000, key="refresh")
+
+# ---------- INDIAN NUMBER FORMAT ----------
+def format_indian(n):
+    n = int(n)
+    s = str(n)
+    if len(s) <= 3:
+        return s
+    last3 = s[-3:]
+    rest = s[:-3]
+    rest = ",".join([rest[max(i-2,0):i] for i in range(len(rest), 0, -2)][::-1])
+    return rest + "," + last3
 
 # Simple styling
 st.markdown("""
@@ -37,7 +48,7 @@ df = df[[
 # Rename
 df.columns = ["team", "datetime", "amount"]
 
-# Convert datetime → date only
+# Convert datetime → date
 df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
 df["date"] = df["datetime"].dt.date
 
@@ -67,19 +78,28 @@ def show_table(data, title):
 
     data = data.dropna(subset=["date"])
 
+    # Date-wise total
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
+    # Format date → MM-DD-YYYY
+    daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%m-%d-%Y")
+
+    # Remove zero rows
     daily = daily[daily["amount"] > 0]
 
+    # Cumulative
     daily["cumulative"] = daily["amount"].cumsum()
 
+    # Total
     total = int(daily["amount"].sum())
-    st.metric(f"{title} Total (₹)", f"{total:,}")
+    st.metric(f"{title} Total (₹)", format_indian(total))
 
-    daily["amount"] = daily["amount"].astype(int)
-    daily["cumulative"] = daily["cumulative"].astype(int)
+    # Format numbers
+    daily["amount"] = daily["amount"].astype(int).apply(format_indian)
+    daily["cumulative"] = daily["cumulative"].astype(int).apply(format_indian)
 
+    # Table
     st.dataframe(daily, use_container_width=True)
 
     st.markdown("---")
@@ -89,8 +109,8 @@ def show_table(data, title):
 show_table(df_sst, "SST")
 show_table(df_fst, "FST")
 
-# -------- GRAND TOTAL ONLY --------
+# -------- GRAND TOTAL --------
 grand_total = int(df["amount"].sum())
 
 st.markdown("<div class='big-font'>💰 Grand Total</div>", unsafe_allow_html=True)
-st.metric("Total Seized (₹)", f"{grand_total:,}")
+st.metric("Total Seized (₹)", format_indian(grand_total))
