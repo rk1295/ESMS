@@ -47,7 +47,7 @@ df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
 # Clean team
 df["team"] = df["team"].astype(str).str.upper()
 
-# REMOVE EMPTY ROWS (IMPORTANT FIX)
+# Remove empty rows
 df = df.dropna(subset=["date", "amount"])
 
 # Split teams
@@ -65,28 +65,21 @@ def show_table(data, title):
         st.warning(f"No data for {title}")
         return
 
-    # Extra safety
     data = data.dropna(subset=["date"])
 
-    # Date-wise total
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
-    # Remove zero rows
     daily = daily[daily["amount"] > 0]
 
-    # Cumulative
     daily["cumulative"] = daily["amount"].cumsum()
 
-    # Total
     total = int(daily["amount"].sum())
     st.metric(f"{title} Total (₹)", f"{total:,}")
 
-    # Format numbers
     daily["amount"] = daily["amount"].astype(int)
     daily["cumulative"] = daily["cumulative"].astype(int)
 
-    # Table
     st.dataframe(daily, use_container_width=True)
 
     st.markdown("---")
@@ -96,23 +89,8 @@ def show_table(data, title):
 show_table(df_sst, "SST")
 show_table(df_fst, "FST")
 
-# -------- SUMMARY --------
-st.markdown("<div class='big-font'>📌 Summary</div>", unsafe_allow_html=True)
-
-team_total = df.groupby("team")["amount"].sum().reset_index()
-team_total.columns = ["Team", "Total Amount (₹)"]
-
-# Format numbers
-team_total["Total Amount (₹)"] = team_total["Total Amount (₹)"].astype(int)
-
-st.dataframe(team_total, use_container_width=True)
-
-# Extract values
-sst_total = team_total[team_total["Team"] == "SST"]["Total Amount (₹)"].sum()
-fst_total = team_total[team_total["Team"] == "FST"]["Total Amount (₹)"].sum()
+# -------- GRAND TOTAL ONLY --------
 grand_total = int(df["amount"].sum())
 
-# Metrics (stacked for mobile)
-st.metric("🚓 SST Total (₹)", f"{int(sst_total):,}")
-st.metric("🚓 FST Total (₹)", f"{int(fst_total):,}")
-st.metric("💰 Grand Total (₹)", f"{grand_total:,}")
+st.markdown("<div class='big-font'>💰 Grand Total</div>", unsafe_allow_html=True)
+st.metric("Total Seized (₹)", f"{grand_total:,}")
