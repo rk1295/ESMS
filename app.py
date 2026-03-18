@@ -96,34 +96,39 @@ col3.metric("💰 Grand Total (₹)", grand_total)
 # -------- TEAM-WISE (DETAILED) TOTAL --------
 st.subheader("📌 Team-wise Detailed Total")
 
-# Combine 3 columns into one
-team_cols = [
-    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER",
-    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER 2",
-    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER 3"
-]
+# 🔍 Find relevant columns automatically
+team_cols = [col for col in df.columns if "WHOME SIZED CASH/ITEMS IS HANDED OVER" in col.upper()]
 
-# Melt into single column
-team_df = df.copy()
-team_df["team_detail"] = team_df[team_cols].astype(str).agg(" ".join, axis=1)
+# Debug (optional - remove later)
+st.write("Detected Team Columns:", team_cols)
 
-# Extract only TEAM info (e.g., FST-TEAM 7)
-team_df["team_detail"] = team_df["team_detail"].str.upper()
+if len(team_cols) == 0:
+    st.warning("No team columns found")
+else:
+    team_df = df.copy()
 
-# Extract pattern like FST-TEAM 7
-team_df["team_detail"] = team_df["team_detail"].str.extract(r'(FST-TEAM\s*\d+|SST-TEAM\s*\d+)', expand=False)
+    # Combine all team columns safely
+    team_df["team_detail"] = team_df[team_cols].astype(str).agg(" ".join, axis=1)
 
-# Remove rows without team
-team_df = team_df.dropna(subset=["team_detail"])
+    # Uppercase
+    team_df["team_detail"] = team_df["team_detail"].str.upper()
 
-# Group by team
-team_wise = team_df.groupby("team_detail")["amount"].sum().reset_index()
+    # Extract TEAM (FST-TEAM X / SST-TEAM X)
+    team_df["team_detail"] = team_df["team_detail"].str.extract(
+        r'(FST[- ]*TEAM\s*\d+|SST[- ]*TEAM\s*\d+)', expand=False
+    )
 
-# Rename
-team_wise.columns = ["Team", "Total Amount (₹)"]
+    # Drop missing
+    team_df = team_df.dropna(subset=["team_detail"])
 
-# Sort descending
-team_wise = team_wise.sort_values("Total Amount (₹)", ascending=False)
+    # Group
+    team_wise = team_df.groupby("team_detail")["amount"].sum().reset_index()
 
-# Display
-st.dataframe(team_wise, use_container_width=True)
+    # Rename
+    team_wise.columns = ["Team", "Total Amount (₹)"]
+
+    # Sort
+    team_wise = team_wise.sort_values("Total Amount (₹)", ascending=False)
+
+    # Display
+    st.dataframe(team_wise, use_container_width=True)
