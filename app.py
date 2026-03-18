@@ -78,28 +78,22 @@ def show_table(data, title):
 
     data = data.dropna(subset=["date"])
 
-    # Date-wise total
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
-    # Format date
-    daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%m-%d-%Y")
+    # Format date → DD-MM-YYYY
+    daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%d-%m-%Y")
 
-    # Remove zero rows
     daily = daily[daily["amount"] > 0]
 
-    # Cumulative
     daily["cumulative"] = daily["amount"].cumsum()
 
-    # Total
     total = int(daily["amount"].sum())
     st.metric(f"{title} Total (₹)", format_indian(total))
 
-    # Format numbers
     daily["amount"] = daily["amount"].astype(int).apply(format_indian)
     daily["cumulative"] = daily["cumulative"].astype(int).apply(format_indian)
 
-    # Table
     st.dataframe(daily, use_container_width=True)
 
     st.markdown("---")
@@ -115,8 +109,15 @@ st.markdown("<div class='big-font'>📅 Day-wise Total (All Teams)</div>", unsaf
 daywise = df.groupby("date")["amount"].sum().reset_index()
 daywise = daywise.sort_values("date")
 
-daywise["date"] = pd.to_datetime(daywise["date"]).dt.strftime("%m-%d-%Y")
+# Add cumulative
+daywise["cumulative"] = daywise["amount"].cumsum()
+
+# Format date → DD-MM-YYYY
+daywise["date"] = pd.to_datetime(daywise["date"]).dt.strftime("%d-%m-%Y")
+
+# Format numbers
 daywise["amount"] = daywise["amount"].astype(int).apply(format_indian)
+daywise["cumulative"] = daywise["cumulative"].astype(int).apply(format_indian)
 
 st.dataframe(daywise, use_container_width=True)
 
