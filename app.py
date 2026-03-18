@@ -93,3 +93,37 @@ col1, col2, col3 = st.columns(3)
 col1.metric("🚓 SST Total (₹)", int(sst_total))
 col2.metric("🚓 FST Total (₹)", int(fst_total))
 col3.metric("💰 Grand Total (₹)", grand_total)
+# -------- TEAM-WISE (DETAILED) TOTAL --------
+st.subheader("📌 Team-wise Detailed Total")
+
+# Combine 3 columns into one
+team_cols = [
+    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER",
+    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER 2",
+    "NAME OF THE DESIGNATION OF THE AUTHORITY TO WHOME SIZED CASH/ITEMS IS HANDED OVER 3"
+]
+
+# Melt into single column
+team_df = df.copy()
+team_df["team_detail"] = team_df[team_cols].astype(str).agg(" ".join, axis=1)
+
+# Extract only TEAM info (e.g., FST-TEAM 7)
+team_df["team_detail"] = team_df["team_detail"].str.upper()
+
+# Extract pattern like FST-TEAM 7
+team_df["team_detail"] = team_df["team_detail"].str.extract(r'(FST-TEAM\s*\d+|SST-TEAM\s*\d+)', expand=False)
+
+# Remove rows without team
+team_df = team_df.dropna(subset=["team_detail"])
+
+# Group by team
+team_wise = team_df.groupby("team_detail")["amount"].sum().reset_index()
+
+# Rename
+team_wise.columns = ["Team", "Total Amount (₹)"]
+
+# Sort descending
+team_wise = team_wise.sort_values("Total Amount (₹)", ascending=False)
+
+# Display
+st.dataframe(team_wise, use_container_width=True)
