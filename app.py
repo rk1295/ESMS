@@ -82,7 +82,7 @@ def show_table(data, title):
     daily = data.groupby("date")["amount"].sum().reset_index()
     daily = daily.sort_values("date")
 
-    # Format date → MM-DD-YYYY
+    # Format date
     daily["date"] = pd.to_datetime(daily["date"]).dt.strftime("%m-%d-%Y")
 
     # Remove zero rows
@@ -108,6 +108,17 @@ def show_table(data, title):
 # -------- DISPLAY --------
 show_table(df_sst, "SST")
 show_table(df_fst, "FST")
+
+# -------- DAY-WISE TOTAL (COMBINED) --------
+st.markdown("<div class='big-font'>📅 Day-wise Total (All Teams)</div>", unsafe_allow_html=True)
+
+daywise = df.groupby("date")["amount"].sum().reset_index()
+daywise = daywise.sort_values("date")
+
+daywise["date"] = pd.to_datetime(daywise["date"]).dt.strftime("%m-%d-%Y")
+daywise["amount"] = daywise["amount"].astype(int).apply(format_indian)
+
+st.dataframe(daywise, use_container_width=True)
 
 # -------- GRAND TOTAL --------
 grand_total = int(df["amount"].sum())
